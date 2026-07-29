@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from src.model import FashionMNISTModel
+from src.model import FashionMNISTModel , FashionMNISTCNN
 from src.data import train_loader, test_loader, val_loader
 from src.evaluate import evaluate, collect_predictions, plot_misclassified_examples
 import matplotlib.pyplot as plt
@@ -21,8 +21,8 @@ class_names = [
     'Ankle boot'
 ]
 
-
-model = FashionMNISTModel()
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model = FashionMNISTCNN().to(device)
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(),lr=0.001)
 
@@ -35,8 +35,9 @@ for epoch in range(num_epochs):
     model.train()
     total_loss = 0.0
     for batch_idx, (images, labels) in enumerate(train_loader):
-        flattened_images = images.view(images.size(0), -1)  
-        logits = model(flattened_images)
+        # flattened_images = images.view(images.size(0), -1)  
+        # logits = model(flattened_images)
+        logits = model(images)
         loss = criterion(logits, labels)
         optimizer.zero_grad()
         loss.backward()
@@ -106,14 +107,6 @@ plt.xticks(rotation=45, ha='right')
 plt.yticks(rotation=0)
 plt.tight_layout()
 
-# Save figure
+
 plt.savefig('confusion_matrix.png', dpi=300, bbox_inches='tight')
 plt.close()
-
-
-plot_misclassified_examples(
-    model=model,
-    data_loader=val_loader,
-    class_names=class_names,
-    num_examples=9,
-)

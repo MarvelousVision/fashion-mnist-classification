@@ -9,8 +9,9 @@ def evaluate(model, data_loader, criterion):
     model.eval()
     with torch.no_grad():
         for images, labels in data_loader:
-            flattened_images = images.view(images.size(0), -1)
-            logits = model(flattened_images)
+#            flattened_images = images.view(images.size(0), -1)
+#            logits = model(flattened_images)
+            logits = model(images)
             loss = criterion(logits, labels)
             total_loss += loss.item()
             num_batches += 1
@@ -27,8 +28,9 @@ def collect_predictions(model, data_loader):
     predicted_labels = []
     with torch.no_grad():
         for images, labels in data_loader:
-            flattened_images = images.view(images.size(0), -1)
-            logits = model(flattened_images)
+#            flattened_images = images.view(images.size(0), -1)
+ #           logits = model(flattened_images)
+            logits = model(images)
             predicted = torch.argmax(logits, dim=1)
             true_labels.extend(labels.cpu().tolist())
             predicted_labels.extend(predicted.cpu().tolist())
