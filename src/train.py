@@ -3,7 +3,24 @@ import torch.nn as nn
 
 from src.model import FashionMNISTModel
 from src.data import train_loader, test_loader, val_loader
-from src.evaluate import evaluate
+from src.evaluate import evaluate, collect_predictions, plot_misclassified_examples
+import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix
+import seaborn as sns
+
+class_names = [
+    'T-shirt/top',
+    'Trouser',
+    'Pullover',
+    'Dress',
+    'Coat',
+    'Sandal',
+    'Shirt',
+    'Sneaker',
+    'Bag',
+    'Ankle boot'
+]
+
 
 model = FashionMNISTModel()
 criterion = nn.CrossEntropyLoss()
@@ -39,22 +56,10 @@ for epoch in range(num_epochs):
     print(f"  Validation accuracy: {val_acc:.2f}%")
     print("-" * 60)
 
-    
-
-train_loss, train_acc = evaluate(model, train_loader, criterion)
-print(f"Train loss: {train_loss:.4f}")
-print(f"Train accuracy: {train_acc:.2f}%")
-
-val_loss, val_acc = evaluate(model, val_loader, criterion)
-print(f"Validation loss: {val_loss:.4f}")
-print(f"Validation accuracy: {val_acc:.2f}%")
-
-import matplotlib.pyplot as plt
 
 plt.switch_backend('Agg') 
 
 epochs = range(1, num_epochs + 1)
-
 
 plt.figure(figsize=(10, 5))
 plt.plot(epochs, train_losses, label='Training Loss')
@@ -78,3 +83,37 @@ plt.grid()
 plt.savefig('accuracy_curve.png')  
 plt.close()  
 
+true_labels, predicted_labels = collect_predictions(model, val_loader)
+cm = confusion_matrix(true_labels, predicted_labels)
+print(f"Confusion matrix shape: {cm.shape}")  
+print(f"Total samples: {cm.sum()}")
+
+plt.figure(figsize=(12, 10))
+sns.heatmap(
+    cm,
+    annot=True,
+    fmt='d',
+    cmap='Blues',
+    xticklabels=class_names,
+    yticklabels=class_names,
+    cbar=True,
+    square=True
+)
+plt.xlabel('Predicted', fontsize=12)
+plt.ylabel('True', fontsize=12)
+plt.title('Confusion Matrix - Fashion MNIST', fontsize=14)
+plt.xticks(rotation=45, ha='right')
+plt.yticks(rotation=0)
+plt.tight_layout()
+
+# Save figure
+plt.savefig('confusion_matrix.png', dpi=300, bbox_inches='tight')
+plt.close()
+
+
+plot_misclassified_examples(
+    model=model,
+    data_loader=val_loader,
+    class_names=class_names,
+    num_examples=9,
+)
