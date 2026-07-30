@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import os
 
 from src.model import FashionMNISTModel , FashionMNISTCNN
 from src.data import train_loader, test_loader, val_loader
@@ -26,9 +27,15 @@ model = FashionMNISTCNN().to(device)
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters(),lr=0.001)
 
+os.makedirs("outputs/models", exist_ok=True)
+
 train_losses = []
 val_losses = []
 val_accuracies = []
+
+best_val_loss = float('inf')
+best_val_acc = 0.0
+best_epoch = 0
 
 num_epochs=5
 for epoch in range(num_epochs): 
@@ -55,7 +62,16 @@ for epoch in range(num_epochs):
     print(f"  Train loss:     {avg_train_loss:.4f}")
     print(f"  Validation loss: {val_loss:.4f}")
     print(f"  Validation accuracy: {val_acc:.2f}%")
-    print("-" * 60)
+    if val_loss < best_val_loss:
+        best_val_loss = val_loss
+        best_val_acc = val_acc
+        best_epoch = epoch +1
+        
+        torch.save(
+            model.state_dict(),
+            "outputs/models/best_cnn.pth"
+        )
+        print(f"New best model saved (epoch {epoch+1})")
 
 
 plt.switch_backend('Agg') 
@@ -110,3 +126,7 @@ plt.tight_layout()
 
 plt.savefig('confusion_matrix.png', dpi=300, bbox_inches='tight')
 plt.close()
+
+print(f"Best epoch: {best_epoch}")
+print(f"Best validation loss: {best_val_loss:.4f}")
+print(f"Best validation accuracy: {best_val_acc:.2f}%")
