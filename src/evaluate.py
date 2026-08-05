@@ -102,3 +102,15 @@ def plot_misclassified_examples(
 
     print(f"Saved misclassified examples to: {save_path}")
 
+def calculate_per_class_accuracy(cm, class_names):
+    class_accuracies = []
+
+    for i, class_name in enumerate(class_names):
+        correct = cm[i, i]
+        total = cm[i].sum()
+        accuracy = 100 * correct / total
+
+        class_accuracies.append(accuracy)
+        print(f"{class_name}: {accuracy:.2f}%")
+
+    return class_accuracies

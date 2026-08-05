@@ -4,10 +4,12 @@ import os
 
 from src.model import FashionMNISTModel , FashionMNISTCNN
 from src.data import train_loader, test_loader, val_loader
-from src.evaluate import evaluate, collect_predictions, plot_misclassified_examples
+from src.evaluate import evaluate, collect_predictions, plot_misclassified_examples, calculate_per_class_accuracy
 import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
 import seaborn as sns
+
+torch.manual_seed(42)
 
 class_names = [
     'T-shirt/top',
@@ -25,7 +27,7 @@ class_names = [
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = FashionMNISTCNN().to(device)
 criterion = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(),lr=0.001)
+optimizer = torch.optim.Adam(model.parameters(),lr=0.001, weight_decay=1e-4)
 
 os.makedirs("outputs/models", exist_ok=True)
 
@@ -130,3 +132,4 @@ plt.close()
 print(f"Best epoch: {best_epoch}")
 print(f"Best validation loss: {best_val_loss:.4f}")
 print(f"Best validation accuracy: {best_val_acc:.2f}%")
+class_accuracies = calculate_per_class_accuracy(cm, class_names)

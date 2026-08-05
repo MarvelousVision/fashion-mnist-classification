@@ -27,6 +27,7 @@ train_data, val_data = random_split(
     generator=generator
 )
 
+train_generator = torch.Generator().manual_seed(42)
 val_loader = DataLoader(
     val_data,
     batch_size=64,
@@ -36,7 +37,8 @@ val_loader = DataLoader(
 train_loader = DataLoader(
     train_data,          
     batch_size=64,       
-    shuffle=True         
+    shuffle=True,
+    generator=train_generator       
 )
 test_loader = DataLoader(
     test_data,          
