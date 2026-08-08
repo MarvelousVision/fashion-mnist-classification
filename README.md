@@ -1,4 +1,3 @@
-````markdown
 # Fashion-MNIST Classification with PyTorch
 
 This project implements and compares two neural network approaches for classifying Fashion-MNIST images:
@@ -84,7 +83,6 @@ fashion-mnist-classification/
 ├── .gitignore
 ├── requirements.txt
 └── README.md
-````
 
 ## Models
 
