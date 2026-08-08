@@ -83,7 +83,7 @@ fashion-mnist-classification/
 ├── .gitignore
 ├── requirements.txt
 └── README.md
-
+```
 ## Models
 
 ### Fully Connected Baseline
