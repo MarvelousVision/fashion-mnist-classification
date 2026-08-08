@@ -2,46 +2,52 @@ from torchvision import datasets , transforms
 import torch
 from torch.utils.data import DataLoader, random_split
 
-full_train_data = datasets.FashionMNIST(
-    root='data',               
-    train=True,                
-    download=True,          
-    transform=transforms.ToTensor()
+BATCH_SIZE = 64
+SEED = 42
+TRAIN_SIZE = 54_000
+VAL_SIZE = 6_000
+
+transform = transforms.ToTensor()
+
+full_train_dataset = datasets.FashionMNIST(
+    root="data",
+    train=True,
+    download=True,
+    transform=transform,
 )
 
-test_data = datasets.FashionMNIST(
-    root='data',               
-    train=False,                
-    download=True,          
-    transform=transforms.ToTensor()
+test_dataset = datasets.FashionMNIST(
+    root="data",
+    train=False,
+    download=True,
+    transform=transform,
 )
 
-train_size = 54000
-val_size = 6000  
+split_generator = torch.Generator().manual_seed(SEED)
 
-
-generator = torch.Generator().manual_seed(42)
-train_data, val_data = random_split(
-    full_train_data,
-    [train_size, val_size],
-    generator=generator
+train_dataset, val_dataset = random_split(
+    full_train_dataset,
+    [TRAIN_SIZE, VAL_SIZE],
+    generator=split_generator,
 )
 
-train_generator = torch.Generator().manual_seed(42)
-val_loader = DataLoader(
-    val_data,
-    batch_size=64,
-    shuffle=False 
-)
+train_loader_generator = torch.Generator().manual_seed(SEED)
 
 train_loader = DataLoader(
-    train_data,          
-    batch_size=64,       
+    train_dataset,
+    batch_size=BATCH_SIZE,
     shuffle=True,
-    generator=train_generator       
+    generator=train_loader_generator,
 )
+
+val_loader = DataLoader(
+    val_dataset,
+    batch_size=BATCH_SIZE,
+    shuffle=False,
+)
+
 test_loader = DataLoader(
-    test_data,          
-    batch_size=64,       
-    shuffle=False       
+    test_dataset,
+    batch_size=BATCH_SIZE,
+    shuffle=False,
 )

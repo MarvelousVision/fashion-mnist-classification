@@ -7,10 +7,11 @@ def evaluate(model, data_loader, criterion):
     total_loss = 0.0
     num_batches = 0
     model.eval()
+    device = next(model.parameters()).device
     with torch.no_grad():
         for images, labels in data_loader:
-#            flattened_images = images.view(images.size(0), -1)
-#            logits = model(flattened_images)
+            images = images.to(device)
+            labels = labels.to(device)
             logits = model(images)
             loss = criterion(logits, labels)
             total_loss += loss.item()
@@ -26,10 +27,11 @@ def collect_predictions(model, data_loader):
     model.eval()
     true_labels = []
     predicted_labels = []
+    device = next(model.parameters()).device
     with torch.no_grad():
         for images, labels in data_loader:
-#            flattened_images = images.view(images.size(0), -1)
- #           logits = model(flattened_images)
+            images = images.to(device)
+            labels = labels.to(device)
             logits = model(images)
             predicted = torch.argmax(logits, dim=1)
             true_labels.extend(labels.cpu().tolist())
@@ -53,11 +55,9 @@ def plot_misclassified_examples(
         for images, labels in data_loader:
             images = images.to(device)
             labels = labels.to(device)
+            logits = model(images)
 
-            flattened_images = images.view(images.size(0), -1)
-            logits = model(flattened_images)
             predictions = torch.argmax(logits, dim=1)
-
             incorrect_indices = torch.where(predictions != labels)[0]
 
             for index in incorrect_indices:
@@ -68,12 +68,10 @@ def plot_misclassified_examples(
                         predictions[index].item(),
                     )
                 )
-
                 if len(mistakes) == num_examples:
                     break
             if len(mistakes) == num_examples:
                 break
-
     if not mistakes:
         print("No misclassified examples found.")
         return
@@ -99,7 +97,7 @@ def plot_misclassified_examples(
 
     plt.tight_layout()
     plt.savefig(save_path, dpi=150, bbox_inches="tight")
-
+    plt.close(fig)
     print(f"Saved misclassified examples to: {save_path}")
 
 def calculate_per_class_accuracy(cm, class_names):

@@ -2,134 +2,96 @@ import torch
 import torch.nn as nn
 import os
 
-from src.model import FashionMNISTModel , FashionMNISTCNN
-from src.data import train_loader, test_loader, val_loader
-from src.evaluate import evaluate, collect_predictions, plot_misclassified_examples, calculate_per_class_accuracy
+from src.model import  FashionMNISTCNN
+from src.data import train_loader,  val_loader
+from src.evaluate import evaluate
 import matplotlib.pyplot as plt
-from sklearn.metrics import confusion_matrix
-import seaborn as sns
 
-torch.manual_seed(42)
+plt.switch_backend("Agg")
 
-class_names = [
-    'T-shirt/top',
-    'Trouser',
-    'Pullover',
-    'Dress',
-    'Coat',
-    'Sandal',
-    'Shirt',
-    'Sneaker',
-    'Bag',
-    'Ankle boot'
-]
+SEED = 42
+LEARNING_RATE = 0.001
+NUM_EPOCHS = 5
+WEIGHT_DECAY = 0.0
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-model = FashionMNISTCNN().to(device)
-criterion = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(),lr=0.001, weight_decay=1e-4)
+torch.manual_seed(SEED)
 
-os.makedirs("outputs/models", exist_ok=True)
+def train():
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = FashionMNISTCNN().to(device)
+    criterion = nn.CrossEntropyLoss()
+    optimizer = torch.optim.Adam(model.parameters(),lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
 
-train_losses = []
-val_losses = []
-val_accuracies = []
+    os.makedirs("outputs/models", exist_ok=True)
+    os.makedirs("outputs/figures", exist_ok=True) 
 
-best_val_loss = float('inf')
-best_val_acc = 0.0
-best_epoch = 0
+    train_losses = []
+    val_losses = []
+    val_accuracies = []
 
-num_epochs=5
-for epoch in range(num_epochs): 
-    model.train()
-    total_loss = 0.0
-    for batch_idx, (images, labels) in enumerate(train_loader):
-        # flattened_images = images.view(images.size(0), -1)  
-        # logits = model(flattened_images)
-        logits = model(images)
-        loss = criterion(logits, labels)
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-        total_loss += loss.item()
-        if batch_idx % 100 == 0:
-            print(f"Batch {batch_idx}, Loss: {loss.item():.4f}")
+    best_val_loss = float('inf')
+    best_val_acc = 0.0
+    best_epoch = 0
 
-    avg_train_loss = total_loss / len(train_loader)
-    val_loss, val_acc = evaluate(model, val_loader, criterion)
-    print(f"Epoch {epoch+1}/{num_epochs}")
-    train_losses.append(avg_train_loss)
-    val_losses.append(val_loss)
-    val_accuracies.append(val_acc)
-    print(f"  Train loss:     {avg_train_loss:.4f}")
-    print(f"  Validation loss: {val_loss:.4f}")
-    print(f"  Validation accuracy: {val_acc:.2f}%")
-    if val_loss < best_val_loss:
-        best_val_loss = val_loss
-        best_val_acc = val_acc
-        best_epoch = epoch +1
-        
-        torch.save(
-            model.state_dict(),
-            "outputs/models/best_cnn.pth"
-        )
-        print(f"New best model saved (epoch {epoch+1})")
+    for epoch in range(NUM_EPOCHS): 
+        model.train()
+        total_loss = 0.0
+        for images, labels in train_loader:
+            images = images.to(device)
+            labels = labels.to(device)
+            logits = model(images)
+            loss = criterion(logits, labels)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            total_loss += loss.item()
 
+        avg_train_loss = total_loss / len(train_loader)
+        val_loss, val_acc = evaluate(model, val_loader, criterion)
+        print(f"Epoch {epoch+1}/{NUM_EPOCHS}")
+        train_losses.append(avg_train_loss)
+        val_losses.append(val_loss)
+        val_accuracies.append(val_acc)
+        print(f"  Train loss:     {avg_train_loss:.4f}")
+        print(f"  Validation loss: {val_loss:.4f}")
+        print(f"  Validation accuracy: {val_acc:.2f}%")
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            best_val_acc = val_acc
+            best_epoch = epoch +1
+            torch.save(
+                model.state_dict(),
+                "outputs/models/best_cnn_baseline.pth"
+            )
+            print(f"New best model saved (epoch {epoch+1})")
 
-plt.switch_backend('Agg') 
+    epochs = range(1, NUM_EPOCHS + 1)
 
-epochs = range(1, num_epochs + 1)
+    plt.figure(figsize=(10, 5))
+    plt.plot(epochs, train_losses, label='Training Loss')
+    plt.plot(epochs, val_losses, label='Validation Loss')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.title('Training and Validation Loss')
+    plt.legend()
+    plt.grid()
+    plt.savefig('outputs/figures/cnn_loss_curve.png')  
+    plt.close()  
 
-plt.figure(figsize=(10, 5))
-plt.plot(epochs, train_losses, label='Training Loss')
-plt.plot(epochs, val_losses, label='Validation Loss')
-plt.xlabel('Epoch')
-plt.ylabel('Loss')
-plt.title('Training and Validation Loss')
-plt.legend()
-plt.grid()
-plt.savefig('loss_curve.png')  
-plt.close()  
+    plt.figure(figsize=(10, 5))
+    plt.plot(epochs, val_accuracies, marker='o', label='Validation Accuracy')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy (%)')
+    plt.title('Validation Accuracy')
+    plt.ylim(80, 95)
+    plt.legend()
+    plt.grid()
+    plt.savefig("outputs/figures/cnn_val_accuracy_curve.png")  
+    plt.close()  
 
-plt.figure(figsize=(10, 5))
-plt.plot(epochs, val_accuracies, marker='o', label='Validation Accuracy')
-plt.xlabel('Epoch')
-plt.ylabel('Accuracy (%)')
-plt.title('Validation Accuracy')
-plt.ylim(0, 100)
-plt.legend()
-plt.grid()
-plt.savefig('accuracy_curve.png')  
-plt.close()  
+    print(f"Best epoch: {best_epoch}")
+    print(f"Best validation loss: {best_val_loss:.4f}")
+    print(f"Best validation accuracy: {best_val_acc:.2f}%")
 
-true_labels, predicted_labels = collect_predictions(model, val_loader)
-cm = confusion_matrix(true_labels, predicted_labels)
-print(f"Confusion matrix shape: {cm.shape}")  
-print(f"Total samples: {cm.sum()}")
-
-plt.figure(figsize=(12, 10))
-sns.heatmap(
-    cm,
-    annot=True,
-    fmt='d',
-    cmap='Blues',
-    xticklabels=class_names,
-    yticklabels=class_names,
-    cbar=True,
-    square=True
-)
-plt.xlabel('Predicted', fontsize=12)
-plt.ylabel('True', fontsize=12)
-plt.title('Confusion Matrix - Fashion MNIST', fontsize=14)
-plt.xticks(rotation=45, ha='right')
-plt.yticks(rotation=0)
-plt.tight_layout()
-
-
-plt.savefig('confusion_matrix.png', dpi=300, bbox_inches='tight')
-plt.close()
-
-print(f"Best epoch: {best_epoch}")
-print(f"Best validation loss: {best_val_loss:.4f}")
-print(f"Best validation accuracy: {best_val_acc:.2f}%")
-class_accuracies = calculate_per_class_accuracy(cm, class_names)
+if __name__ == "__main__":
+    train()
